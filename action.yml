@@ -19,7 +19,6 @@ inputs:
   dest-registry:
     description: 'Destination registry (eg. ghcr.io)'
     required: true
-    default: 'docker.io'
   dest-repo:
     description: 'Destination repo (eg. username/repo)'
     required: true
@@ -34,8 +33,6 @@ runs:
         DOCKERHUB_USERNAME=${{ inputs.dockerhub-username }}
         DOCKERHUB_PASSWORD=${{ inputs.dockerhub-password }}
         DOCKERHUB_REPO=${{ inputs.dockerhub-repo }}
-        DOCKER_DEST_USERNAME=${{ inputs.dest-username }}
-        DOCKER_DEST_PASSWORD=${{ inputs.dest-password }}
         DOCKER_DEST_REGISTRY=${{ inputs.dest-registry }}
         DOCKER_DEST_REPO=${{ inputs.dest-repo }}
 

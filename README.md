@@ -20,7 +20,7 @@ ___
 ## Usage
 
 ```yaml
-name: dump
+name: dockerhub-mirror
 
 on:
   workflow_dispatch:
@@ -28,8 +28,11 @@ on:
       dockerhub-repo:
         description: 'DockerHub repository'
         required: true
+      dest-registry:
+        description: 'Destination registry (eg. ghcr.io)'
+        required: true
       dest-repo:
-        description: 'Destination repository'
+        description: 'Destination repository (eg. username/repo)'
         required: true
 
 jobs:
@@ -49,20 +52,20 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       -
-        name: Login to ${{ secrets.DEST_REGISTRY }}
+        name: Login to ${{ github.event.inputs.dest-registry }}
         uses: docker/login-action@v1
         with:
-          registry: ${{ secrets.DEST_REGISTRY }}
+          registry: ${{ github.event.inputs.dest-registry }}
           username: ${{ secrets.DEST_USERNAME }}
           password: ${{ secrets.DEST_PASSWORD }}
       -
-        name: DockerHub Mirror
+        name: Mirror ${{ github.event.inputs.dockerhub-repo }} to ${{ github.event.inputs.dest-registry }}/${{ github.event.inputs.dest-repo }}
         uses: crazy-max/ghaction-dockerhub-mirror@v1
         with:
           dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
-          dockerhub-password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          dockerhub-password: ${{ secrets.DOCKERHUB_TOKEN }}
           dockerhub-repo: ${{ github.event.inputs.dockerhub-repo }}
-          dest-registry: ${{ secrets.DEST_REGISTRY }}
+          dest-registry: ${{ github.event.inputs.dest-registry }}
           dest-repo: ${{ github.event.inputs.dest-repo }}
 ```
 
