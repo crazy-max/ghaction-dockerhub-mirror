@@ -1,0 +1,88 @@
+# https://help.github.com/en/articles/metadata-syntax-for-github-actions
+name: 'DockerHub mirror'
+description: 'GitHub Action to mirror a DockerHub repo to another registry'
+author: 'crazy-max'
+branding:
+  color: 'green'
+  icon: 'copy'
+
+inputs:
+  dockerhub-username:
+    description: 'DockerHub username'
+    required: true
+  dockerhub-password:
+    description: 'DockerHub password or persona laccess token'
+    required: true
+  dockerhub-repo:
+    description: 'DockerHub repo to mirror'
+    required: true
+  dest-registry:
+    description: 'Destination registry (eg. ghcr.io)'
+    required: true
+    default: 'docker.io'
+  dest-repo:
+    description: 'Destination repo (eg. username/repo)'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    -
+      run: |
+        set -e
+
+        DOCKERHUB_USERNAME=${{ inputs.dockerhub-username }}
+        DOCKERHUB_PASSWORD=${{ inputs.dockerhub-password }}
+        DOCKERHUB_REPO=${{ inputs.dockerhub-repo }}
+        DOCKER_DEST_USERNAME=${{ inputs.dest-username }}
+        DOCKER_DEST_PASSWORD=${{ inputs.dest-password }}
+        DOCKER_DEST_REGISTRY=${{ inputs.dest-registry }}
+        DOCKER_DEST_REPO=${{ inputs.dest-repo }}
+
+        function get_platforms() {
+          local images=${1}
+          platforms=""
+          for image in $images; do
+            _jq() {
+              echo "${image}" | base64 --decode | jq -r "${1}"
+            }
+            os=$(_jq '.os')
+            arch=$(_jq '.architecture')
+            variant=$(_jq '.variant')
+            platform="$os/$arch"
+            if [ -n "$variant" ] && [ "$variant" != "null" ]; then
+              platform="$platform/$variant"
+            fi
+            if [ -n "$platforms" ]; then
+              platforms="$platforms,"
+            fi
+            platforms="$platforms$platform"
+          done
+          echo "$platforms"
+        }
+
+        TOKEN=$(curl -s -H "Content-Type: application/json" -X POST -d '{"username": "'${DOCKERHUB_USERNAME}'", "password": "'${DOCKERHUB_PASSWORD}'"}' https://hub.docker.com/v2/users/login/ | jq -r .token)
+        if [ -z "${TOKEN}" -o "${TOKEN}" == "null" ]; then
+          echo >&2 "error: cannot retrieve token"
+          exit 1
+        fi
+
+        TAG_LIST=$(curl -s -H "Authorization: Bearer ${TOKEN}" "https://hub.docker.com/v2/repositories/${DOCKERHUB_REPO}/tags/?page_size=10000" | jq -rc '.results[] | @base64')
+        for TAG in $TAG_LIST; do
+          _jq() {
+            echo "${TAG}" | base64 --decode | jq -r ${1}
+          }
+          TAG_NAME=$(_jq '.name')
+          TAG_IMAGES=$(echo "$(_jq '.images')" | jq -r '.[] | @base64')
+          TAG_PLATFORMS=$(get_platforms "${TAG_IMAGES}")
+          echo "::group::Copying ${DOCKERHUB_REPO}:${TAG_NAME} to ${$DOCKER_DEST_REGISTRY}/${DOCKER_DEST_REPO}"
+          echo "FROM --platform=\${TARGETPLATFORM:-linux/amd64} ${DOCKER_DEST_REGISTRY}/${DOCKERHUB_REPO}:${TAG_NAME}" > Dockerfile.tmp
+          set -x
+          docker buildx build \
+            --platform "${TAG_PLATFORMS}" \
+            --tag "${DOCKER_DEST_REGISTRY}/${DOCKER_DEST_REPO}:${TAG_NAME}" \
+            --file ./Dockerfile.tmp .
+          set +x
+          echo "::endgroup"
+        done
+      shell: bash
