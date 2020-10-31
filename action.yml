@@ -72,7 +72,7 @@ runs:
           TAG_NAME=$(_jq '.name')
           TAG_IMAGES=$(echo "$(_jq '.images')" | jq -r '.[] | @base64')
           TAG_PLATFORMS=$(get_platforms "${TAG_IMAGES}")
-          echo "::group::Copying ${TAG_NAME} to ${$DOCKER_DEST_REGISTRY}/${DOCKER_DEST_REPO}"
+          echo "::group::Copying ${DOCKERHUB_REPO}:${TAG_NAME} to ${DOCKER_DEST_REGISTRY}/${DOCKER_DEST_REPO}"
           echo "FROM --platform=\${TARGETPLATFORM:-linux/amd64} ${DOCKER_DEST_REGISTRY}/${DOCKERHUB_REPO}:${TAG_NAME}" > Dockerfile.tmp
           set -x
           docker buildx build \
