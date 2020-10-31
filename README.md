@@ -10,6 +10,8 @@ to mirror a DockerHub repo to another registry.
 
 If you are interested, [check out](https://git.io/Je09Y) my other :octocat: GitHub Actions!
 
+![](.github/workflow_dispatch.png) ![Screenshot](.github/screenshot.png)
+
 ___
 
 * [Usage](#usage)
