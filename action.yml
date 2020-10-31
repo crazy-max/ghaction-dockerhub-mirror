@@ -81,7 +81,6 @@ runs:
           TAG_NAME=$(_jq '.name')
           TAG_IMAGES=$(echo "$(_jq '.images')" | jq -r '.[] | @base64')
           TAG_PLATFORMS=$(get_platforms "${TAG_IMAGES}")
-          set -x
           echo "::group::Copying ${DOCKERHUB_REPO}:${TAG_NAME} to ${DOCKER_DEST_REGISTRY}/${DOCKER_DEST_REPO}"
           echo "FROM --platform=\${TARGETPLATFORM:-linux/amd64} ${DOCKERHUB_REPO}:${TAG_NAME}" > Dockerfile.tmp
           docker buildx build \
@@ -90,6 +89,5 @@ runs:
             --tag "${DOCKER_DEST_REGISTRY}/${DOCKER_DEST_REPO}:${TAG_NAME}" \
             --file ./Dockerfile.tmp .
           echo "::endgroup"
-          set +x
         done
       shell: bash
