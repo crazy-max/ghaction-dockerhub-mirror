@@ -22,6 +22,10 @@ inputs:
   dest-repo:
     description: 'Destination repo (eg. username/repo)'
     required: true
+  dry-run:
+    description: 'Dry run'
+    required: false
+    default: 'false'
 
 runs:
   using: 'composite'
@@ -35,6 +39,11 @@ runs:
         DOCKERHUB_REPO=${{ inputs.dockerhub-repo }}
         DOCKER_DEST_REGISTRY=${{ inputs.dest-registry }}
         DOCKER_DEST_REPO=${{ inputs.dest-repo }}
+
+        PUSH_FLAG=""
+        if [ "${{ inputs.dry-run }}" = "false" ]; then
+          PUSH_FLAG="--push"
+        fi
 
         function get_platforms() {
           local images=${1}
@@ -72,14 +81,15 @@ runs:
           TAG_NAME=$(_jq '.name')
           TAG_IMAGES=$(echo "$(_jq '.images')" | jq -r '.[] | @base64')
           TAG_PLATFORMS=$(get_platforms "${TAG_IMAGES}")
+          set -x
           echo "::group::Copying ${DOCKERHUB_REPO}:${TAG_NAME} to ${DOCKER_DEST_REGISTRY}/${DOCKER_DEST_REPO}"
           echo "FROM --platform=\${TARGETPLATFORM:-linux/amd64} ${DOCKERHUB_REPO}:${TAG_NAME}" > Dockerfile.tmp
-          set -x
           docker buildx build \
+            ${PUSH_FLAG} \
             --platform "${TAG_PLATFORMS}" \
             --tag "${DOCKER_DEST_REGISTRY}/${DOCKER_DEST_REPO}:${TAG_NAME}" \
             --file ./Dockerfile.tmp .
-          set +x
           echo "::endgroup"
+          set +x
         done
       shell: bash

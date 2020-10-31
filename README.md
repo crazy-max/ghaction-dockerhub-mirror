@@ -34,6 +34,10 @@ on:
       dest-repo:
         description: 'Destination repository (eg. username/repo)'
         required: true
+      dry-run:
+        description: 'Dry run'
+        required: false
+        default: 'false'
 
 jobs:
   dockerhub-mirror:
@@ -67,6 +71,7 @@ jobs:
           dockerhub-repo: ${{ github.event.inputs.dockerhub-repo }}
           dest-registry: ${{ github.event.inputs.dest-registry }}
           dest-repo: ${{ github.event.inputs.dest-repo }}
+          dry-run: ${{ github.event.inputs.dry-run }}
 ```
 
 ## Customizing
