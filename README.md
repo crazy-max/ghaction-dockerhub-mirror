@@ -8,7 +8,7 @@
 GitHub Action [composite](https://docs.github.com/en/actions/creating-actions/creating-a-composite-run-steps-action)
 to mirror a DockerHub repo to another registry.
 
-If you are interested, [check out](https://git.io/Je09Y) my other :octocat: GitHub Actions!
+If you are interested, [check out](https://github.com/crazy-max?tab=repositories&q=ghaction&type=source&language=&sort=) my other :octocat: GitHub Actions!
 
 ![](.github/workflow_dispatch.png) ![Screenshot](.github/screenshot.png)
 
