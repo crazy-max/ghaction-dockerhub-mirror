@@ -11,7 +11,7 @@ inputs:
     description: 'DockerHub username'
     required: true
   dockerhub-password:
-    description: 'DockerHub password or persona laccess token'
+    description: 'DockerHub password or personal access token'
     required: true
   dockerhub-repo:
     description: 'DockerHub repo to mirror'
