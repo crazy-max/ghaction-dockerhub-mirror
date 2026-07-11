@@ -17,6 +17,12 @@ on:
 jobs:
   dockerhub-mirror:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dry-run:
+          - false
+          - true
     services:
       registry:
         image: registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
@@ -49,3 +55,4 @@ jobs:
           dockerhub-repo: crazymax/diun
           dest-registry: localhost:5000
           dest-repo: name/app
+          dry-run: ${{ matrix.dry-run }}

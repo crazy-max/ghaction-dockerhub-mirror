@@ -40,32 +40,10 @@ runs:
         DOCKER_DEST_REGISTRY=${{ inputs.dest-registry }}
         DOCKER_DEST_REPO=${{ inputs.dest-repo }}
 
-        PUSH_FLAG=""
+        DRYRUN_FLAG="--dry-run"
         if [ "${{ inputs.dry-run }}" = "false" ]; then
-          PUSH_FLAG="--push"
+          DRYRUN_FLAG=""
         fi
-
-        function get_platforms() {
-          local images=${1}
-          platforms=""
-          for image in $images; do
-            _jq() {
-              echo "${image}" | base64 --decode | jq -r "${1}"
-            }
-            os=$(_jq '.os')
-            arch=$(_jq '.architecture')
-            variant=$(_jq '.variant')
-            platform="$os/$arch"
-            if [ -n "$variant" ] && [ "$variant" != "null" ]; then
-              platform="$platform/$variant"
-            fi
-            if [ -n "$platforms" ]; then
-              platforms="$platforms,"
-            fi
-            platforms="$platforms$platform"
-          done
-          echo "$platforms"
-        }
 
         TOKEN=$(curl -s -H "Content-Type: application/json" -X POST -d '{"username": "'${DOCKERHUB_USERNAME}'", "password": "'${DOCKERHUB_PASSWORD}'"}' https://hub.docker.com/v2/users/login/ | jq -r .token)
         if [ -z "${TOKEN}" -o "${TOKEN}" == "null" ]; then
@@ -79,15 +57,13 @@ runs:
             echo "${TAG}" | base64 --decode | jq -r ${1}
           }
           TAG_NAME=$(_jq '.name')
-          TAG_IMAGES=$(echo "$(_jq '.images')" | jq -r '.[] | @base64')
-          TAG_PLATFORMS=$(get_platforms "${TAG_IMAGES}")
-          echo "::group::Copying ${DOCKERHUB_REPO}:${TAG_NAME} to ${DOCKER_DEST_REGISTRY}/${DOCKER_DEST_REPO}"
-          echo "FROM --platform=\${TARGETPLATFORM:-linux/amd64} ${DOCKERHUB_REPO}:${TAG_NAME}" > Dockerfile.tmp
-          docker buildx build \
-            ${PUSH_FLAG} \
-            --platform "${TAG_PLATFORMS}" \
-            --tag "${DOCKER_DEST_REGISTRY}/${DOCKER_DEST_REPO}:${TAG_NAME}" \
-            --file ./Dockerfile.tmp .
+          echo "::group::Copying ${DOCKERHUB_REPO}:${TAG_NAME} to ${DOCKER_DEST_REGISTRY}/${DOCKER_DEST_REPO}:${TAG_NAME}"
+          set -x
+          docker buildx imagetools create ${DRYRUN_FLAG} --tag "${DOCKER_DEST_REGISTRY}/${DOCKER_DEST_REPO}:${TAG_NAME}" "${DOCKERHUB_REPO}:${TAG_NAME}"
+          set +x
+          if [ "${{ inputs.dry-run }}" = "false" ]; then
+            docker buildx imagetools inspect "${DOCKER_DEST_REGISTRY}/${DOCKER_DEST_REPO}:${TAG_NAME}"
+          fi
           echo "::endgroup"
         done
       shell: bash
